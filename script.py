@@ -1,4 +1,6 @@
 import csv
+import numpy as np
+import matplotlib.pyplot as plt
 import argparse
 from collections import OrderedDict
 
@@ -8,9 +10,9 @@ def get_info_from_reader(reader, speed):
     for row in reader:
         meters = float(row[1]) * speed
         if row[0] in ('N', 'S'):
-            y_disp += meters
+            y_disp += meters if row[0] == 'N' else (meters * -1)
         else:
-            x_disp += meters
+            x_disp += meters if row[0] == 'E' else (meters * -1)
         dist += meters
     return round(x_disp, 2), round(y_disp, 2), round(dist, 2)
 
@@ -39,6 +41,42 @@ def rcCar(speed, act, exp):
 def plotRC(speed, act, exp):
     rc_car_info = rcCar(speed, act, exp)
 
+    bars = plt.subplot(211)
+    distances = rc_car_info[-2:]
+    ind = np.arange(len(distances[0]))
+    exp_rects = bars.bar(ind, distances[1], 0.20, color='b')
+    act_rects = bars.bar(ind + 0.20, distances[0], 0.20, color='k')
+    bars.set_xticks(ind + 0.20 / 2)
+    bars.set_xticklabels(tuple(map(str, ind)))
+    bars.legend((exp_rects[0], act_rects[1]), ('Expected', 'Actual'), loc='lower center')
+    bars.set_ylabel('Distance (m)')
+    bars.set_xlabel('Car')
+    bars.set_title('Distance Travelled per Car (m)')
+    
+    exp_disp = plt.subplot(223)
+    plt.xlim(-20, 20)
+    plt.ylim(-20, 20)
+    markers_colors = np.random.rand(len(ind))
+    
+    exp_values = rc_car_info[2:-2]
+    exp_disp.scatter(exp_values[0], exp_values[1], marker='o', c=markers_colors)
+    exp_disp.set_xticks(np.arange(-20, 21, 10))
+    exp_disp.set_yticks(np.arange(-20, 21, 10))
+    exp_disp.set_ylabel('Vertical Displacement (m)')
+    exp_disp.set_xlabel('Horizontal Displacement (m)')
+    exp_disp.set_title('Expected Displacement (m)')
+    
+    act_disp = plt.subplot(224)
+    act_values = rc_car_info[:2]
+    act_disp.scatter(act_values[0], act_values[1], marker='x', c=markers_colors)
+    act_disp.set_xticks(np.arange(-20, 21, 10))
+    act_disp.set_yticks(np.arange(-20, 21, 10))
+    act_disp.set_ylabel('Vertical Displacement (m)')
+    act_disp.set_xlabel('Horizontal Displacement (m)')
+    act_disp.set_title('Actual Displacement (m)')
+
+    plt.tight_layout()
+    plt.show()
 
 
 def main():
@@ -47,8 +85,7 @@ def main():
     parser.add_argument('-a', '--act', nargs='+', help='List of csv files with actual data (eg: --act file1 file2 file3...)')
     parser.add_argument('-e', '--exp', nargs='+', help='List of csv files with expected data (eg: --exp file1 file2 file3...)')
     args = vars(parser.parse_args())
-    result = rcCar(**args)
-    print(result)
+    plotRC(**args)
 
 
 if __name__ == '__main__':
